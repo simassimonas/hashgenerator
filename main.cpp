@@ -1,115 +1,192 @@
 #include "hash.h"
 
-unsigned int StringToInt(string input) //string pavertimas unsigned int (is interneto)
+//sudaro random stringa
+string randomString(size_t length)
+{
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ.?,"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
+
+//stringa convertina i unsgined int'a
+unsigned int StringToInt(string input)
 {
 	return (unsigned int)input[0] | (unsigned int)(input[1] << 8) | (unsigned int)(input[2] << 16) | (unsigned int)(input[3] << 24);
 }
 
-/*unsigned int BitRotate(unsigned int value, int count) //bitwise shift algoritmas is interneto
-{
-	const unsigned int mask = CHAR_BIT * sizeof(value) - 1;
-	count &= mask;
-	return (value << count) | (value >> (-count & mask));
-}*/
-
-unsigned int BitRotate(unsigned int x, int n) {
+//parotatina bitus
+unsigned int leftRotate(unsigned int x, int n) {
   return (x << n) | (x >> (32-n));
 }
 
-/*unsigned int hashA(unsigned int A, unsigned int B, unsigned int C, unsigned int D)
-{
-	return ((B * A) & (C * D));
+unsigned int F(unsigned int x, unsigned int y, unsigned int z) {
+  return x&y | ~x&z;
 }
-
-
-
 
 unsigned int G(unsigned int x, unsigned int y, unsigned int z) {
   return x&z | y&~z;
 }
 
+unsigned int H(unsigned int x, unsigned int y, unsigned int z) {
+  return x^y^z;
+}
+unsigned int I(unsigned int x,unsigned int y, unsigned int z) {
+  return y ^ (x | ~z);
 }
 
+
 void FF(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigned int x, unsigned int s, unsigned int ac) {
-  a = BitRotate(a+ F(b,c,d) + x + ac, s) + b;
+  a = leftRotate(a+ F(b,c,d) + x + ac, s) + b;
 }
 
 void GG(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigned int x, unsigned int s, unsigned int ac) {
-  a = BitRotate(a + G(b,c,d) + x + ac, s) + b;
+  a = leftRotate(a + G(b,c,d) + x + ac, s) + b;
 }
 
 void HH(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigned int x, unsigned int s, unsigned int ac) {
-  a = BitRotate(a + H(b,c,d) + x + ac, s) + b;
+  a = leftRotate(a + H(b,c,d) + x + ac, s) + b;
 }
 
 void II(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigned int x, unsigned int s, unsigned int ac) {
-  a = BitRotate(a + I(b,c,d) + x + ac, s) + b;
-}*/
+  a = leftRotate(a + I(b,c,d) + x + ac, s) + b;
+}
 
-
-void hashFunction(string input, ofstream & failas)
+void Hashstring(string input, ofstream & fout)
 {
-
-
 	string inputL = std::to_string((int)input.length());
 	input.append(64 - input.length() % 64, '\0');
 	input.append(64 - inputL.length(), '\0');
 	input.append(inputL);
 
-	unsigned int Key[4] = {0x25B6112A, 0x29F43018, 0x155CB7A7, 0X7232AAAF}; //random reiksmes
+	unsigned int buf[4] = {0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476}; //random reiksmes
 	for (int i = 0; i < input.length() / 64; i++)
 	{
 
 		unsigned int block[16];
-		/*for (int j = 0; j < 16; j++)
+		for (int j = 0; j < 16; j++)
 		{
 			block[j] = StringToInt(input.substr(64 * i + 4 * j, 4));
-		}*/
-		unsigned int a = Key[0];
-		unsigned int b = Key[1];
-		unsigned int c = Key[2];
-		unsigned int d = Key[3];
+		}
+		unsigned int a = buf[0];
+		unsigned int b = buf[1];
+		unsigned int c = buf[2];
+		unsigned int d = buf[3];
 
-		/*Hashas1(A, B, C, D, block[0], 3);
-		Hashas2(C, B, A, D, block[1], 3);
-		Hashas3(B, C, A, D, block[2], 3);
+        //1 round
+        FF (a, b, c, d, block[ 0], S11, 0xd76aa478);
+        FF (d, a, b, c, block[ 1], S12, 0xe8c7b756);
+        FF (c, d, a, b, block[ 2], S13, 0x242070db);
+        FF (b, c, d, a, block[ 3], S14, 0xc1bdceee);
+        FF (a, b, c, d, block[ 4], S11, 0xf57c0faf);
+        FF (d, a, b, c, block[ 5], S12, 0x4787c62a);
+        FF (c, d, a, b, block[ 6], S13, 0xa8304613);
+        FF (b, c, d, a, block[ 7], S14, 0xfd469501);
+        FF (a, b, c, d, block[ 8], S11, 0x698098d8);
+        FF (d, a, b, c, block[ 9], S12, 0x8b44f7af);
+        FF (c, d, a, b, block[10], S13, 0xffff5bb1);
+        FF (b, c, d, a, block[11], S14, 0x895cd7be);
+        FF (a, b, c, d, block[12], S11, 0x6b901122);
+        FF (d, a, b, c, block[13], S12, 0xfd987193);
+        FF (c, d, a, b, block[14], S13, 0xa679438e);
+        FF (b, c, d, a, block[15], S14, 0x49b40821);
 
-		Hashas3(D, B, C, A, block[3], 7);
-		Hashas2(A, B, C, D, block[4], 7);
-		Hashas1(B, C, A, D, block[5], 7);
+        //2 round
+        GG (a, b, c, d, block[ 1], S21, 0xf61e2562);
+        GG (d, a, b, c, block[ 6], S22, 0xc040b340);
+        GG (c, d, a, b, block[11], S23, 0x265e5a51);
+        GG (b, c, d, a, block[ 0], S24, 0xe9b6c7aa);
+        GG (a, b, c, d, block[ 5], S21, 0xd62f105d);
+        GG (d, a, b, c, block[10], S22,  0x2441453);
+        GG (c, d, a, b, block[15], S23, 0xd8a1e681);
+        GG (b, c, d, a, block[ 4], S24, 0xe7d3fbc8);
+        GG (a, b, c, d, block[ 9], S21, 0x21e1cde6);
+        GG (d, a, b, c, block[14], S22, 0xc33707d6);
+        GG (c, d, a, b, block[ 3], S23, 0xf4d50d87);
+        GG (b, c, d, a, block[ 8], S24, 0x455a14ed);
+        GG (a, b, c, d, block[13], S21, 0xa9e3e905);
+        GG (d, a, b, c, block[ 2], S22, 0xfcefa3f8);
+        GG (c, d, a, b, block[ 7], S23, 0x676f02d9);
+        GG (b, c, d, a, block[12], S24, 0x8d2a4c8a);
 
-		Hashas2(C, B, A, D, block[6], 11);
-		Hashas1(D, B, A, C, block[7], 11);
-		Hashas3(A, C, B, D, block[8], 11);
+        //3 round
+        HH (a, b, c, d, block[ 5], S31, 0xfffa3942);
+        HH (d, a, b, c, block[ 8], S32, 0x8771f681);
+        HH (c, d, a, b, block[11], S33, 0x6d9d6122);
+        HH (b, c, d, a, block[14], S34, 0xfde5380c);
+        HH (a, b, c, d, block[ 1], S31, 0xa4beea44);
+        HH (d, a, b, c, block[ 4], S32, 0x4bdecfa9);
+        HH (c, d, a, b, block[ 7], S33, 0xf6bb4b60);
+        HH (b, c, d, a, block[10], S34, 0xbebfbc70);
+        HH (a, b, c, d, block[13], S31, 0x289b7ec6);
+        HH (d, a, b, c, block[ 0], S32, 0xeaa127fa);
+        HH (c, d, a, b, block[ 3], S33, 0xd4ef3085);
+        HH (b, c, d, a, block[ 6], S34,  0x4881d05);
+        HH (a, b, c, d, block[ 9], S31, 0xd9d4d039);
+        HH (d, a, b, c, block[12], S32, 0xe6db99e5);
+        HH (c, d, a, b, block[15], S33, 0x1fa27cf8);
+        HH (b, c, d, a, block[ 2], S34, 0xc4ac5665);
 
-		Hashas3(B, D, C, A, block[9], 15);
-		Hashas1(C, B, A, D, block[10], 15);
-		Hashas2(D, C, A, B, block[11], 15);
+        //4 round
+        II (a, b, c, d, block[ 0], S41, 0xf4292244);
+        II (d, a, b, c, block[ 7], S42, 0x432aff97);
+        II (c, d, a, b, block[14], S43, 0xab9423a7);
+        II (b, c, d, a, block[ 5], S44, 0xfc93a039);
+        II (a, b, c, d, block[12], S41, 0x655b59c3);
+        II (d, a, b, c, block[ 3], S42, 0x8f0ccc92);
+        II (c, d, a, b, block[10], S43, 0xffeff47d);
+        II (b, c, d, a, block[ 1], S44, 0x85845dd1);
+        II (a, b, c, d, block[ 8], S41, 0x6fa87e4f);
+        II (d, a, b, c, block[15], S42, 0xfe2ce6e0);
+        II (c, d, a, b, block[ 6], S43, 0xa3014314);
+        II (b, c, d, a, block[13], S44, 0x4e0811a1);
+        II (a, b, c, d, block[ 4], S41, 0xf7537e82);
+        II (d, a, b, c, block[11], S42, 0xbd3af235);
+        II (c, d, a, b, block[ 2], S43, 0x2ad7d2bb);
+        II (b, c, d, a, block[ 9], S44, 0xeb86d391);
 
-		Hashas3(A, B, C, D, block[12], 19);
-		Hashas3(B, D, A, C, block[13], 19);
-		Hashas3(C, D, A, B, block[14], 19);
-		Hashas3(D, A, B, C, block[15], 19);*/
-
-  FF (a, b, c, d, block[ 0], S11, 0xd76aa478);
-
-
-		Key[0] += d;
-		Key[1] += b;
-		Key[2] += a;
-		Key[3] += c;
+		buf[0] += a;
+		buf[1] += b;
+		buf[2] += c;
+		buf[3] += d;
 	}
 
-    cout << std::hex << Key[0] << std::hex <<  Key[1] << std::hex << Key[2] << std::hex << Key[3] << endl;
-
+    //isvedimas
+    for (int i = 0; i < 4; i++)
+	{
+		fout << std::hex << std::setw(8) << std::setfill('0') << buf[i];
+	}
+	fout << endl;
 }
+
 int main(int argc, char *argv[])
 {
-    Timer T;
-	string input="asdf";
-    ofstream failas ("rez.txt");
-    hashFunction(input, failas);
+    Timer laikas;
 
-	failas<<T.elapsed()<<endl;
+    //sudaro random stringu faila
+	/*ofstream ffout ("duom.txt");
+    for(int i=0; i<20000; i++){
+        ffout << "N";
+        ffout << randomString(1) << endl;
+    }*/
+
+    ofstream fout ("rez.txt");
+    std::ifstream fin ("vienassimbolis.txt");
+    string line;
+
+    while (getline(fin, line))
+    {
+        Hashstring(line, fout);
+    }
+
+	cout << "Laikas: " << laikas.elapsed() << endl;
 	return 0;
 }

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <streambuf>
 #include <chrono>
+#include <algorithm>
 using std::cin;
 using std::cout;
 using std::endl;
@@ -36,7 +37,6 @@ using std::stringstream;
 
 class Timer {
 private:
-	// panaudojame using
 	using hrClock = std::chrono::high_resolution_clock;
 	using durationDouble = std::chrono::duration<double>;
 	std::chrono::time_point<hrClock> start;

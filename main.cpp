@@ -1,5 +1,14 @@
 #include "hash.h"
 
+template< typename T >
+std::string int_to_hex( T i )
+{
+  std::stringstream stream;
+  stream << std::setfill ('0') << std::setw(sizeof(T)*2)
+         << std::hex << i;
+  return stream.str();
+}
+
 //sudaro random stringa
 string randomString(size_t length)
 {
@@ -60,7 +69,7 @@ void II(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigne
   a = leftRotate(a + I(b,c,d) + x + ac, s) + b;
 }
 
-void Hashstring(string input, ofstream & fout)
+string hashFunction(string input, ofstream & fout)
 {
 	string inputL = std::to_string((int)input.length());
 	input.append(64 - input.length() % 64, '\0');
@@ -160,11 +169,14 @@ void Hashstring(string input, ofstream & fout)
 	}
 
     //isvedimas
-    for (int i = 0; i < 4; i++)
+    /*for (int i = 0; i < 4; i++)
 	{
 		fout << std::hex << std::setw(8) << std::setfill('0') << buf[i];
 	}
-	fout << endl;
+	fout << endl;*/
+
+    string returnas = int_to_hex(buf[0]) + int_to_hex(buf[1]) + int_to_hex(buf[2]) + int_to_hex(buf[3]);
+	return returnas;
 }
 
 int main(int argc, char *argv[])
@@ -172,20 +184,28 @@ int main(int argc, char *argv[])
     Timer laikas;
 
     //sudaro random stringu faila
-	/*ofstream ffout ("duom.txt");
-    for(int i=0; i<20000; i++){
-        ffout << "N";
-        ffout << randomString(1) << endl;
-    }*/
+	ofstream ffout ("duom.txt");
+    for(int i=0; i<1000000; i++){
+        ffout << randomString(5) << " " << randomString(5) << endl;
+    }
 
     ofstream fout ("rez.txt");
-    std::ifstream fin ("vienassimbolis.txt");
-    string line;
-
+    std::ifstream fin ("duom.txt");
+    string temp1, temp2, line;
+    int kiekNesutampa=0;
+    unsigned int tempInt;
     while (getline(fin, line))
     {
-        Hashstring(line, fout);
+        std::istringstream iss(line);
+        iss >> temp1;
+        iss >> temp2;
+        fout << hashFunction(temp1, fout) << " " << hashFunction(temp2, fout) << " ";
+        if(hashFunction(temp1, fout)!=hashFunction(temp2, fout)){
+            fout << "Nesutampa" << endl;
+        }else kiekNesutampa++;
     }
+
+    cout << "Nesutampa: " << kiekNesutampa << " hash'u" << endl;
 
 	cout << "Laikas: " << laikas.elapsed() << endl;
 	return 0;

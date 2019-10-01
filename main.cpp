@@ -69,7 +69,7 @@ void II(unsigned int &a, unsigned int b, unsigned int c, unsigned int d, unsigne
   a = leftRotate(a + I(b,c,d) + x + ac, s) + b;
 }
 
-string hashFunction(string input, ofstream & fout)
+unsigned int* hashFunction(string input, ofstream & fout, unsigned int mas[4])
 {
 	string inputL = std::to_string((int)input.length());
 	input.append(64 - input.length() % 64, '\0');
@@ -171,41 +171,81 @@ string hashFunction(string input, ofstream & fout)
     //isvedimas
     /*for (int i = 0; i < 4; i++)
 	{
-		fout << std::hex << std::setw(8) << std::setfill('0') << buf[i];
+		cout << std::hex << std::setw(8) << std::setfill('0') << buf[i];
 	}
-	fout << endl;*/
+	cout << endl;*/
 
-    string returnas = int_to_hex(buf[0]) + int_to_hex(buf[1]) + int_to_hex(buf[2]) + int_to_hex(buf[3]);
-	return returnas;
+	mas[0]=buf[0];
+	mas[1]=buf[1];
+	mas[2]=buf[2];
+	mas[3]=buf[3];
+	return mas;
+}
+
+int differentBits(unsigned int A[], unsigned int B[])
+{
+    int differentBits = 0;
+    for(int i=0; i<4; i++){
+        int temp=0;
+        for (int j = 0; j < 64; j++){
+            if (((A[i] >> j) & 1) != ((B[i] >> j) & 1)){
+                temp++;
+            }
+        }
+        differentBits+=temp;
+    }
+
+    return differentBits;
+}
+
+void checkPercentage(){
+    std::ifstream fin ("4testas.txt");
+    ofstream fout ("rez.txt");
+    string line;
+    unsigned int masyvas1[4];
+    unsigned int masyvas2[4];
+    unsigned int *previous;
+    unsigned int *current;
+    int iterations = 0;
+    int sum = 0;
+    int minPerc = 100;
+    int maxPerc = 0;
+    while(getline(fin, line))
+    {
+        std::istringstream iss(line);
+        string reiksme1, reiksme2;
+        iss >> reiksme1 >> reiksme2;
+        current = hashFunction(reiksme1, fout, masyvas1);
+        previous = hashFunction(reiksme2, fout, masyvas2);
+
+        int temp = 0;
+        temp = differentBits(current, previous);
+
+        if(temp < minPerc){
+            minPerc = temp;
+        }
+        if (temp > maxPerc){
+            maxPerc = temp;
+        }
+        sum += temp;
+        iterations++;
+    }
+
+    double avg = (double)sum/(double)iterations;
+    double maxP = (double)maxPerc/256*100;
+    double minP = (double)minPerc/256*100;
+    cout << "Vidurkis: " << avg / 256*100 << "%"<<endl;
+    cout << "Max: " << maxP << "%"<<endl;
+    cout << "Min: " << minP << "%"<<endl;
 }
 
 int main(int argc, char *argv[])
 {
     Timer laikas;
+    //unsigned int mas[1];
+    //ofstream fout ("rez.txt");
 
-    //sudaro random stringu faila
-	ofstream ffout ("duom.txt");
-    for(int i=0; i<1000000; i++){
-        ffout << randomString(5) << " " << randomString(5) << endl;
-    }
-
-    ofstream fout ("rez.txt");
-    std::ifstream fin ("duom.txt");
-    string temp1, temp2, line;
-    int kiekNesutampa=0;
-    unsigned int tempInt;
-    while (getline(fin, line))
-    {
-        std::istringstream iss(line);
-        iss >> temp1;
-        iss >> temp2;
-        fout << hashFunction(temp1, fout) << " " << hashFunction(temp2, fout) << " ";
-        if(hashFunction(temp1, fout)!=hashFunction(temp2, fout)){
-            fout << "Nesutampa" << endl;
-        }else kiekNesutampa++;
-    }
-
-    cout << "Nesutampa: " << kiekNesutampa << " hash'u" << endl;
+    checkPercentage();
 
 	cout << "Laikas: " << laikas.elapsed() << endl;
 	return 0;
